@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
@@ -10,6 +10,10 @@ import {
 } from '@/services/lancamentos.service';
 import { Lancamento, Categoria, FiltrosDashboard } from '@/types/financeiro';
 import { ChevronLeft, ChevronRight, Check, Plus, BarChart2, LogOut } from 'lucide-react';
+
+function formatMoeda(n: number) {
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -92,6 +96,34 @@ export default function MesPage() {
   const [addVenc, setAddVenc]     = useState('');
   const [addCatId, setAddCatId]   = useState('');
   const [addSaving, setAddSaving] = useState(false);
+
+  // Inline valor edit
+  const [editValorId, setEditValorId]   = useState<string | null>(null);
+  const [editValorRaw, setEditValorRaw] = useState('');
+  const valorInputRef = useRef<HTMLInputElement>(null);
+
+  function startEditValor(l: Lancamento) {
+    setEditValorId(l.id);
+    setEditValorRaw(formatMoeda(l.valor));
+    setTimeout(() => valorInputRef.current?.select(), 0);
+  }
+
+  async function commitEditValor(l: Lancamento) {
+    if (editValorId !== l.id) return;
+    setEditValorId(null);
+    const digits = editValorRaw.replace(/\D/g, '');
+    const novo = parseInt(digits || '0', 10) / 100;
+    if (novo > 0 && novo !== l.valor) {
+      setLancamentos((prev) => prev.map((x) => x.id === l.id ? { ...x, valor: novo } : x));
+      await atualizarLancamento(l.id, { valor: novo });
+    }
+  }
+
+  function handleValorInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, '');
+    const num = parseInt(digits || '0', 10) / 100;
+    setEditValorRaw(formatMoeda(num));
+  }
 
   // Auth guard
   useEffect(() => {
@@ -463,14 +495,32 @@ export default function MesPage() {
                     })}
                   </span>
 
-                  {/* Value */}
-                  <span
-                    className={`text-sm font-medium tabular-nums whitespace-nowrap flex-shrink-0 ${
-                      l.status === 'pago' ? 'text-slate-500' : 'text-slate-200'
-                    }`}
-                  >
-                    {brl(l.valor)}
-                  </span>
+                  {/* Value — inline edit */}
+                  {editValorId === l.id ? (
+                    <input
+                      ref={valorInputRef}
+                      type="text"
+                      inputMode="numeric"
+                      value={editValorRaw}
+                      onChange={handleValorInputChange}
+                      onBlur={() => commitEditValor(l)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); commitEditValor(l); }
+                        if (e.key === 'Escape') setEditValorId(null);
+                      }}
+                      className="w-28 bg-[#0f1117] border border-violet-500 rounded px-2 py-0.5 text-sm font-medium tabular-nums text-right text-slate-200 focus:outline-none flex-shrink-0"
+                    />
+                  ) : (
+                    <span
+                      title="Clique para editar"
+                      onClick={() => startEditValor(l)}
+                      className={`text-sm font-medium tabular-nums whitespace-nowrap flex-shrink-0 cursor-pointer hover:underline underline-offset-2 decoration-dotted ${
+                        l.status === 'pago' ? 'text-slate-500' : 'text-slate-200'
+                      }`}
+                    >
+                      {brl(l.valor)}
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
