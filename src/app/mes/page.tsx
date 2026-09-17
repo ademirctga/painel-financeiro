@@ -1,15 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { fetchLancamentos, fetchCategorias } from '@/services/analytics.service';
+import { seedCategoriasDefault } from '@/services/categorias.service';
 import {
   inserirLancamento, atualizarLancamento, marcarComoPago, desmarcarPago,
 } from '@/services/lancamentos.service';
 import { Lancamento, Categoria, FiltrosDashboard } from '@/types/financeiro';
-import { ChevronLeft, ChevronRight, Check, Plus, BarChart2, LogOut } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Plus, BarChart2, LogOut, Pencil } from 'lucide-react';
+
+function formatMoeda(n: number) {
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -93,23 +98,64 @@ export default function MesPage() {
   const [addCatId, setAddCatId]   = useState('');
   const [addSaving, setAddSaving] = useState(false);
 
+  // Inline valor edit
+  const [editValorId, setEditValorId]   = useState<string | null>(null);
+  const [editValorRaw, setEditValorRaw] = useState('');
+  const valorInputRef = useRef<HTMLInputElement>(null);
+
+  function startEditValor(l: Lancamento) {
+    setEditValorId(l.id);
+    setEditValorRaw(formatMoeda(l.valor));
+    setTimeout(() => valorInputRef.current?.select(), 0);
+  }
+
+  async function commitEditValor(l: Lancamento) {
+    if (editValorId !== l.id) return;
+    setEditValorId(null);
+    const digits = editValorRaw.replace(/\D/g, '');
+    const novo = parseInt(digits || '0', 10) / 100;
+    if (novo > 0 && novo !== l.valor) {
+      setLancamentos((prev) => prev.map((x) => x.id === l.id ? { ...x, valor: novo } : x));
+      await atualizarLancamento(l.id, { valor: novo });
+    }
+  }
+
+  function handleValorInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, '');
+    const num = parseInt(digits || '0', 10) / 100;
+    setEditValorRaw(formatMoeda(num));
+  }
+
   // Auth guard
   useEffect(() => {
     if (!authLoading && !session) router.replace('/login');
   }, [session, authLoading, router]);
 
-  // Fetch categorias once
+  // Fetch categorias once + seed defaults in background
   useEffect(() => {
     if (!session) return;
     fetchCategorias().then(setCategorias);
+    seedCategoriasDefault().then(() => fetchCategorias().then(setCategorias)).catch(() => {});
   }, [session]);
 
-  // Fetch lancamentos when month or refreshKey changes
+  // Fetch lancamentos when month or refreshKey changes + auto-detect overdue
   useEffect(() => {
     if (!session) return;
     setLoading(true);
     fetchLancamentos(filtrosParaMes(mes)).then((l) => {
-      setLancamentos(l);
+      const today = new Date().toISOString().slice(0, 10);
+      const toUpdate = l.filter(
+        (item) => item.tipo === 'despesa' && item.status === 'previsto' && item.dataCompetencia < today
+      );
+      if (toUpdate.length > 0) {
+        const updated = l.map((item) =>
+          toUpdate.find((u) => u.id === item.id) ? { ...item, status: 'atrasado' as const } : item
+        );
+        setLancamentos(updated);
+        toUpdate.forEach((item) => atualizarLancamento(item.id, { status: 'atrasado' }));
+      } else {
+        setLancamentos(l);
+      }
       setLoading(false);
     });
   }, [session, mes, refreshKey]);
@@ -130,6 +176,9 @@ export default function MesPage() {
     if (pr(a.status) !== pr(b.status)) return pr(a.status) - pr(b.status);
     return a.dataCompetencia.localeCompare(b.dataCompetencia);
   });
+
+  const emAtraso   = despOrdenadas.filter((l) => l.status === 'atrasado');
+  const despNormais = despOrdenadas.filter((l) => l.status !== 'atrasado');
 
   const catsDespesa = categorias.filter((c) => c.tipo === 'despesa');
 
@@ -353,22 +402,28 @@ export default function MesPage() {
                 />
               </div>
               <div className="flex gap-2">
-                <input
-                  type="date"
-                  value={addVenc}
-                  onChange={(e) => setAddVenc(e.target.value)}
-                  className="flex-1 bg-[#0f1117] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
-                />
-                <select
-                  value={addCatId}
-                  onChange={(e) => setAddCatId(e.target.value)}
-                  className="flex-1 bg-[#0f1117] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
-                >
-                  <option value="">Sem categoria</option>
-                  {catsDespesa.map((c) => (
-                    <option key={c.id} value={c.id}>{c.nome}</option>
-                  ))}
-                </select>
+                <div className="flex-1">
+                  <label className="block text-xs text-slate-500 mb-1">Vencimento</label>
+                  <input
+                    type="date"
+                    value={addVenc}
+                    onChange={(e) => setAddVenc(e.target.value)}
+                    className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs text-slate-500 mb-1">Categoria</label>
+                  <select
+                    value={addCatId}
+                    onChange={(e) => setAddCatId(e.target.value)}
+                    className="w-full bg-[#0f1117] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
+                  >
+                    <option value="">Sem categoria</option>
+                    {catsDespesa.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="flex justify-end gap-2">
                 <button
@@ -389,6 +444,76 @@ export default function MesPage() {
             </form>
           )}
 
+          {/* Em Atraso section */}
+          {!loading && emAtraso.length > 0 && (
+            <div className="border-b border-white/5">
+              <div className="px-5 pt-4 pb-2 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <h3 className="text-xs font-semibold text-red-400 uppercase tracking-wider">
+                  Em Atraso ({emAtraso.length})
+                </h3>
+              </div>
+              <ul className="divide-y divide-white/5">
+                {emAtraso.map((l) => (
+                  <li
+                    key={l.id}
+                    className="flex items-center gap-3 px-5 py-3 bg-red-500/[0.04] hover:bg-red-500/[0.07] transition-colors"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleTogglePago(l)}
+                      className="flex-shrink-0 w-5 h-5 rounded border border-red-400 hover:border-red-300 flex items-center justify-center transition-colors"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm truncate text-red-200">{l.descricao}</p>
+                      {l.categoriaNome && (
+                        <span
+                          className="text-xs px-1.5 py-px rounded mt-0.5 inline-block"
+                          style={{
+                            backgroundColor: (l.categoriaCor || '#94a3b8') + '20',
+                            color: l.categoriaCor || '#94a3b8',
+                          }}
+                        >
+                          {l.categoriaNome}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-xs text-red-400/70 whitespace-nowrap flex-shrink-0">
+                      {new Date(l.dataCompetencia + 'T12:00:00').toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                      })}
+                    </span>
+                    {editValorId === l.id ? (
+                      <input
+                        ref={valorInputRef}
+                        type="text"
+                        inputMode="numeric"
+                        value={editValorRaw}
+                        onChange={handleValorInputChange}
+                        onBlur={() => commitEditValor(l)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') { e.preventDefault(); commitEditValor(l); }
+                          if (e.key === 'Escape') setEditValorId(null);
+                        }}
+                        className="w-28 bg-[#0f1117] border border-violet-500 rounded px-2 py-0.5 text-sm font-medium tabular-nums text-right text-slate-200 focus:outline-none flex-shrink-0"
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => startEditValor(l)}
+                        className="flex items-center gap-1 group/val text-sm font-semibold tabular-nums whitespace-nowrap flex-shrink-0 text-red-400"
+                      >
+                        {brl(l.valor)}
+                        <Pencil size={10} className="opacity-0 group-hover/val:opacity-60 transition-opacity" />
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Bills list */}
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -404,9 +529,9 @@ export default function MesPage() {
                 Adicionar conta
               </button>
             </div>
-          ) : (
+          ) : despNormais.length === 0 && emAtraso.length > 0 ? null : (
             <ul className="divide-y divide-white/5">
-              {despOrdenadas.map((l) => (
+              {despNormais.map((l) => (
                 <li
                   key={l.id}
                   className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.02] transition-colors"
@@ -418,8 +543,6 @@ export default function MesPage() {
                     className={`flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors ${
                       l.status === 'pago'
                         ? 'bg-emerald-500 border-emerald-500'
-                        : l.status === 'atrasado'
-                        ? 'border-red-400 hover:border-red-300'
                         : 'border-white/20 hover:border-white/40'
                     }`}
                   >
@@ -435,23 +558,16 @@ export default function MesPage() {
                     >
                       {l.descricao}
                     </p>
-                    {(l.categoriaNome || l.status === 'atrasado') && (
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {l.categoriaNome && (
-                          <span
-                            className="text-xs px-1.5 py-px rounded"
-                            style={{
-                              backgroundColor: (l.categoriaCor || '#94a3b8') + '20',
-                              color: l.categoriaCor || '#94a3b8',
-                            }}
-                          >
-                            {l.categoriaNome}
-                          </span>
-                        )}
-                        {l.status === 'atrasado' && (
-                          <span className="text-xs text-red-400">em atraso</span>
-                        )}
-                      </div>
+                    {l.categoriaNome && (
+                      <span
+                        className="text-xs px-1.5 py-px rounded mt-0.5 inline-block"
+                        style={{
+                          backgroundColor: (l.categoriaCor || '#94a3b8') + '20',
+                          color: l.categoriaCor || '#94a3b8',
+                        }}
+                      >
+                        {l.categoriaNome}
+                      </span>
                     )}
                   </div>
 
@@ -463,14 +579,33 @@ export default function MesPage() {
                     })}
                   </span>
 
-                  {/* Value */}
-                  <span
-                    className={`text-sm font-medium tabular-nums whitespace-nowrap flex-shrink-0 ${
-                      l.status === 'pago' ? 'text-slate-500' : 'text-slate-200'
-                    }`}
-                  >
-                    {brl(l.valor)}
-                  </span>
+                  {/* Value — inline edit */}
+                  {editValorId === l.id ? (
+                    <input
+                      ref={valorInputRef}
+                      type="text"
+                      inputMode="numeric"
+                      value={editValorRaw}
+                      onChange={handleValorInputChange}
+                      onBlur={() => commitEditValor(l)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); commitEditValor(l); }
+                        if (e.key === 'Escape') setEditValorId(null);
+                      }}
+                      className="w-28 bg-[#0f1117] border border-violet-500 rounded px-2 py-0.5 text-sm font-medium tabular-nums text-right text-slate-200 focus:outline-none flex-shrink-0"
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => startEditValor(l)}
+                      className={`flex items-center gap-1 group/val text-sm font-medium tabular-nums whitespace-nowrap flex-shrink-0 ${
+                        l.status === 'pago' ? 'text-slate-500' : 'text-slate-200'
+                      }`}
+                    >
+                      {brl(l.valor)}
+                      <Pencil size={10} className="opacity-0 group-hover/val:opacity-60 transition-opacity" />
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>

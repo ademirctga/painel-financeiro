@@ -6,7 +6,7 @@ export interface LancamentoInput {
   valor: number;
   dataCompetencia: string;
   dataPagamento?: string | null;
-  status: 'previsto' | 'pago';
+  status: 'previsto' | 'pago' | 'atrasado' | 'cancelado';
   categoriaId?: string | null;
   metodoId?: string | null;
   centroCustoId?: string | null;

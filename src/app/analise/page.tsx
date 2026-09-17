@@ -18,6 +18,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Kpis, Lancamento, MensalCategoria } from '@/types/financeiro';
 import { LogOut, Database, Plus, CalendarDays, RefreshCw } from 'lucide-react';
 import { gerarLancamentosDoMes } from '@/services/recorrencias.service';
+import { seedCategoriasDefault } from '@/services/categorias.service';
 
 import { KpiRow } from '@/components/kpi/KpiRow';
 import { CardDinheiroExtra } from '@/components/kpi/CardDinheiroExtra';
@@ -70,9 +71,10 @@ export default function DashboardPage() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  // ── gerar lançamentos recorrentes do mês (1x por sessão) ────────────────
+  // ── seed categorias padrão + gerar recorrentes (1x por sessão) ─────────
   useEffect(() => {
     if (!session) return;
+    seedCategoriasDefault();
     gerarLancamentosDoMes().then((gerados) => {
       if (gerados > 0) refetchAll();
     });
