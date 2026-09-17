@@ -117,3 +117,30 @@ export interface FluxoCaixa {
   dia: string;
   movimento: number;
 }
+
+export type FrequenciaRecorrencia =
+  | 'semanal'
+  | 'quinzenal'
+  | 'mensal'
+  | 'bimestral'
+  | 'trimestral'
+  | 'semestral'
+  | 'anual';
+
+export interface Recorrencia {
+  id: string;
+  descricao: string;
+  valor: number;
+  tipo: TipoLancamento;
+  categoriaId: string | null;
+  categoriaNome?: string;
+  categoriaCor?: string;
+  metodoId: string | null;
+  metodoNome?: string;
+  centroCustoId: string | null;
+  frequencia: FrequenciaRecorrencia;
+  diaReferencia: number;
+  dataInicio: string;
+  dataFim: string | null;
+  ativo: boolean;
+}

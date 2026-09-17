@@ -16,7 +16,8 @@ import type { LancamentoInput } from '@/services/lancamentos.service';
 import type { SaveResult } from '@/components/lancamentos/ModalLancamento';
 import { useAuth } from '@/context/AuthContext';
 import { Kpis, Lancamento, MensalCategoria } from '@/types/financeiro';
-import { LogOut, Database, Plus, CalendarDays } from 'lucide-react';
+import { LogOut, Database, Plus, CalendarDays, RefreshCw } from 'lucide-react';
+import { gerarLancamentosDoMes } from '@/services/recorrencias.service';
 
 import { KpiRow } from '@/components/kpi/KpiRow';
 import { BarraFiltros } from '@/components/filters/BarraFiltros';
@@ -67,6 +68,15 @@ export default function DashboardPage() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
+
+  // ── gerar lançamentos recorrentes do mês (1x por sessão) ────────────────
+  useEffect(() => {
+    if (!session) return;
+    gerarLancamentosDoMes().then((gerados) => {
+      if (gerados > 0) refetchAll();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
 
   // ── data fetch ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -175,6 +185,13 @@ export default function DashboardPage() {
             >
               <CalendarDays size={14} />
               Mês
+            </Link>
+            <Link
+              href="/recorrencias"
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              <RefreshCw size={14} />
+              Fixos
             </Link>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${loading ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`} />
