@@ -10,7 +10,7 @@ import {
   inserirLancamento, atualizarLancamento, marcarComoPago, desmarcarPago,
 } from '@/services/lancamentos.service';
 import { Lancamento, Categoria, FiltrosDashboard } from '@/types/financeiro';
-import { ChevronLeft, ChevronRight, Check, Plus, BarChart2, LogOut } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Plus, BarChart2, LogOut, Pencil } from 'lucide-react';
 
 function formatMoeda(n: number) {
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -131,10 +131,11 @@ export default function MesPage() {
     if (!authLoading && !session) router.replace('/login');
   }, [session, authLoading, router]);
 
-  // Fetch categorias once (seed defaults first)
+  // Fetch categorias once + seed defaults in background
   useEffect(() => {
     if (!session) return;
-    seedCategoriasDefault().then(() => fetchCategorias().then(setCategorias));
+    fetchCategorias().then(setCategorias);
+    seedCategoriasDefault().then(() => fetchCategorias().then(setCategorias)).catch(() => {});
   }, [session]);
 
   // Fetch lancamentos when month or refreshKey changes + auto-detect overdue
@@ -498,13 +499,14 @@ export default function MesPage() {
                         className="w-28 bg-[#0f1117] border border-violet-500 rounded px-2 py-0.5 text-sm font-medium tabular-nums text-right text-slate-200 focus:outline-none flex-shrink-0"
                       />
                     ) : (
-                      <span
-                        title="Clique para editar"
+                      <button
+                        type="button"
                         onClick={() => startEditValor(l)}
-                        className="text-sm font-semibold tabular-nums whitespace-nowrap flex-shrink-0 text-red-400 cursor-pointer hover:underline underline-offset-2 decoration-dotted"
+                        className="flex items-center gap-1 group/val text-sm font-semibold tabular-nums whitespace-nowrap flex-shrink-0 text-red-400"
                       >
                         {brl(l.valor)}
-                      </span>
+                        <Pencil size={10} className="opacity-0 group-hover/val:opacity-60 transition-opacity" />
+                      </button>
                     )}
                   </li>
                 ))}
@@ -593,15 +595,16 @@ export default function MesPage() {
                       className="w-28 bg-[#0f1117] border border-violet-500 rounded px-2 py-0.5 text-sm font-medium tabular-nums text-right text-slate-200 focus:outline-none flex-shrink-0"
                     />
                   ) : (
-                    <span
-                      title="Clique para editar"
+                    <button
+                      type="button"
                       onClick={() => startEditValor(l)}
-                      className={`text-sm font-medium tabular-nums whitespace-nowrap flex-shrink-0 cursor-pointer hover:underline underline-offset-2 decoration-dotted ${
+                      className={`flex items-center gap-1 group/val text-sm font-medium tabular-nums whitespace-nowrap flex-shrink-0 ${
                         l.status === 'pago' ? 'text-slate-500' : 'text-slate-200'
                       }`}
                     >
                       {brl(l.valor)}
-                    </span>
+                      <Pencil size={10} className="opacity-0 group-hover/val:opacity-60 transition-opacity" />
+                    </button>
                   )}
                 </li>
               ))}
