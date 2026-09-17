@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Lancamento } from '@/types/financeiro';
 import { formatBRL, formatDate } from '@/lib/format';
 import { STATUS_COLORS } from '@/lib/colors';
@@ -13,16 +13,58 @@ interface Props {
   onDelete: (lancamento: Lancamento) => void;
   onMarkPago: (id: string) => void;
   onOpenLixeira: () => void;
+  onUpdateValor: (id: string, novoValor: number) => Promise<void>;
 }
 
 type SortKey = 'dataCompetencia' | 'valor' | 'descricao' | 'status';
 
-export function TabelaLancamentos({ data, onNovo, onEdit, onDelete, onMarkPago, onOpenLixeira }: Props) {
+function parseMoeda(raw: string): number {
+  return parseFloat(raw.replace(/\./g, '').replace(',', '.')) || 0;
+}
+
+function formatMoeda(n: number) {
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+export function TabelaLancamentos({ data, onNovo, onEdit, onDelete, onMarkPago, onOpenLixeira, onUpdateValor }: Props) {
   const [sortKey, setSortKey]           = useState<SortKey>('dataCompetencia');
   const [sortDir, setSortDir]           = useState<'asc' | 'desc'>('desc');
   const [page, setPage]                 = useState(0);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [editingValorId, setEditingValorId]   = useState<string | null>(null);
+  const [editingValorRaw, setEditingValorRaw] = useState('');
+  const valorInputRef = useRef<HTMLInputElement>(null);
   const PER_PAGE = 15;
+
+  function startEditValor(l: Lancamento) {
+    setEditingValorId(l.id);
+    setEditingValorRaw(formatMoeda(l.valor));
+    setTimeout(() => { valorInputRef.current?.select(); }, 0);
+  }
+
+  async function commitEditValor(l: Lancamento) {
+    if (editingValorId !== l.id) return;
+    setEditingValorId(null);
+    const novo = parseMoeda(editingValorRaw);
+    if (novo > 0 && novo !== l.valor) {
+      await onUpdateValor(l.id, novo);
+    }
+  }
+
+  function cancelEditValor() {
+    setEditingValorId(null);
+  }
+
+  function handleValorKeyDown(e: React.KeyboardEvent, l: Lancamento) {
+    if (e.key === 'Enter') { e.preventDefault(); commitEditValor(l); }
+    if (e.key === 'Escape') cancelEditValor();
+  }
+
+  function handleValorChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, '');
+    const num = parseInt(digits || '0', 10) / 100;
+    setEditingValorRaw(formatMoeda(num));
+  }
 
   function handleSort(key: SortKey) {
     if (sortKey === key) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
@@ -117,11 +159,29 @@ export function TabelaLancamentos({ data, onNovo, onEdit, onDelete, onMarkPago, 
                     </span>
                   )}
                 </td>
-                <td
-                  className="px-4 py-3 whitespace-nowrap font-medium tabular-nums"
-                  style={{ color: l.tipo === 'receita' ? '#10b981' : '#ef4444' }}
-                >
-                  {l.tipo === 'receita' ? '+' : '-'}{formatBRL(l.valor)}
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {editingValorId === l.id ? (
+                    <input
+                      ref={valorInputRef}
+                      type="text"
+                      inputMode="numeric"
+                      value={editingValorRaw}
+                      onChange={handleValorChange}
+                      onBlur={() => commitEditValor(l)}
+                      onKeyDown={(e) => handleValorKeyDown(e, l)}
+                      className="w-28 bg-[#0f1117] border border-violet-500 rounded px-2 py-0.5 text-xs font-medium tabular-nums text-right focus:outline-none"
+                      style={{ color: l.tipo === 'receita' ? '#10b981' : '#ef4444' }}
+                    />
+                  ) : (
+                    <span
+                      title="Clique para editar"
+                      onClick={() => startEditValor(l)}
+                      className="font-medium tabular-nums cursor-pointer hover:underline underline-offset-2 decoration-dotted"
+                      style={{ color: l.tipo === 'receita' ? '#10b981' : '#ef4444' }}
+                    >
+                      {l.tipo === 'receita' ? '+' : '-'}{formatBRL(l.valor)}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   {l.status === 'previsto' ? (

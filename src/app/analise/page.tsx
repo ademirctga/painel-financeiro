@@ -16,9 +16,11 @@ import type { LancamentoInput } from '@/services/lancamentos.service';
 import type { SaveResult } from '@/components/lancamentos/ModalLancamento';
 import { useAuth } from '@/context/AuthContext';
 import { Kpis, Lancamento, MensalCategoria } from '@/types/financeiro';
-import { LogOut, Database, Plus, CalendarDays } from 'lucide-react';
+import { LogOut, Database, Plus, CalendarDays, RefreshCw } from 'lucide-react';
+import { gerarLancamentosDoMes } from '@/services/recorrencias.service';
 
 import { KpiRow } from '@/components/kpi/KpiRow';
+import { CardDinheiroExtra } from '@/components/kpi/CardDinheiroExtra';
 import { BarraFiltros } from '@/components/filters/BarraFiltros';
 import { DonutCategorias } from '@/components/charts/DonutCategorias';
 import { ReceitaVsDespesa } from '@/components/charts/ReceitaVsDespesa';
@@ -67,6 +69,15 @@ export default function DashboardPage() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
+
+  // ── gerar lançamentos recorrentes do mês (1x por sessão) ────────────────
+  useEffect(() => {
+    if (!session) return;
+    gerarLancamentosDoMes().then((gerados) => {
+      if (gerados > 0) refetchAll();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
 
   // ── data fetch ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -148,6 +159,13 @@ export default function DashboardPage() {
     setModalOpen(true);
   }
 
+  async function handleUpdateValor(id: string, novoValor: number) {
+    const { atualizarLancamento } = await import('@/services/lancamentos.service');
+    await atualizarLancamento(id, { valor: novoValor });
+    setLancamentos((prev) => prev.map((l) => l.id === id ? { ...l, valor: novoValor } : l));
+    fetchKpis(filtros).then(setKpis);
+  }
+
   // ── render ───────────────────────────────────────────────────────────────
   if (authLoading || !session) {
     return (
@@ -175,6 +193,13 @@ export default function DashboardPage() {
             >
               <CalendarDays size={14} />
               Mês
+            </Link>
+            <Link
+              href="/recorrencias"
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            >
+              <RefreshCw size={14} />
+              Fixos
             </Link>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${loading ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`} />
@@ -210,11 +235,16 @@ export default function DashboardPage() {
         />
         <KpiRow kpis={kpis} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
           <DonutCategorias data={mensal} />
           <div className="lg:col-span-2">
             <ReceitaVsDespesa data={mensal} />
           </div>
+          <CardDinheiroExtra
+            inicio={filtros.periodo.inicio}
+            fim={filtros.periodo.fim}
+            onAdded={refetchAll}
+          />
         </div>
 
         <TabelaLancamentos
@@ -224,6 +254,7 @@ export default function DashboardPage() {
           onDelete={handleDelete}
           onMarkPago={handleMarkPago}
           onOpenLixeira={() => setLixeiraOpen(true)}
+          onUpdateValor={handleUpdateValor}
         />
       </main>
 
