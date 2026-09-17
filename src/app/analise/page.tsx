@@ -20,6 +20,7 @@ import { LogOut, Database, Plus, CalendarDays, RefreshCw } from 'lucide-react';
 import { gerarLancamentosDoMes } from '@/services/recorrencias.service';
 
 import { KpiRow } from '@/components/kpi/KpiRow';
+import { CardDinheiroExtra } from '@/components/kpi/CardDinheiroExtra';
 import { BarraFiltros } from '@/components/filters/BarraFiltros';
 import { DonutCategorias } from '@/components/charts/DonutCategorias';
 import { ReceitaVsDespesa } from '@/components/charts/ReceitaVsDespesa';
@@ -158,6 +159,13 @@ export default function DashboardPage() {
     setModalOpen(true);
   }
 
+  async function handleUpdateValor(id: string, novoValor: number) {
+    const { atualizarLancamento } = await import('@/services/lancamentos.service');
+    await atualizarLancamento(id, { valor: novoValor });
+    setLancamentos((prev) => prev.map((l) => l.id === id ? { ...l, valor: novoValor } : l));
+    fetchKpis(filtros).then(setKpis);
+  }
+
   // ── render ───────────────────────────────────────────────────────────────
   if (authLoading || !session) {
     return (
@@ -227,11 +235,16 @@ export default function DashboardPage() {
         />
         <KpiRow kpis={kpis} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
           <DonutCategorias data={mensal} />
           <div className="lg:col-span-2">
             <ReceitaVsDespesa data={mensal} />
           </div>
+          <CardDinheiroExtra
+            inicio={filtros.periodo.inicio}
+            fim={filtros.periodo.fim}
+            onAdded={refetchAll}
+          />
         </div>
 
         <TabelaLancamentos
@@ -241,6 +254,7 @@ export default function DashboardPage() {
           onDelete={handleDelete}
           onMarkPago={handleMarkPago}
           onOpenLixeira={() => setLixeiraOpen(true)}
+          onUpdateValor={handleUpdateValor}
         />
       </main>
 
