@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { fetchLancamentos, fetchCategorias } from '@/services/analytics.service';
+import { seedCategoriasDefault } from '@/services/categorias.service';
 import {
   inserirLancamento, atualizarLancamento, marcarComoPago, desmarcarPago,
 } from '@/services/lancamentos.service';
@@ -130,10 +131,10 @@ export default function MesPage() {
     if (!authLoading && !session) router.replace('/login');
   }, [session, authLoading, router]);
 
-  // Fetch categorias once
+  // Fetch categorias once (seed defaults first)
   useEffect(() => {
     if (!session) return;
-    fetchCategorias().then(setCategorias);
+    seedCategoriasDefault().then(() => fetchCategorias().then(setCategorias));
   }, [session]);
 
   // Fetch lancamentos when month or refreshKey changes + auto-detect overdue
