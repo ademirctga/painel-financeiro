@@ -26,12 +26,12 @@ export function KpiCard({ title, value, subtitle, trend, color = 'default', icon
   const textColor = colorMap[color];
 
   return (
-    <div className="bg-[#1a1f2e] border border-white/5 rounded-xl p-5 flex flex-col gap-2">
+    <div className="bg-[#1a1f2e] border border-white/5 rounded-xl p-3 sm:p-5 flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">{title}</span>
         {icon && <span className="text-slate-500">{icon}</span>}
       </div>
-      <div className={cn('text-2xl font-bold tabular-nums', textColor)}>{value}</div>
+      <div className={cn('text-base sm:text-xl lg:text-2xl font-bold tabular-nums', textColor)}>{value}</div>
       <div className="flex items-center gap-2 min-h-[18px]">
         {trend !== undefined && (
           <>
