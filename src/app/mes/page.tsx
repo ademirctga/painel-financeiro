@@ -7,10 +7,10 @@ import { useAuth } from '@/context/AuthContext';
 import { fetchLancamentos, fetchCategorias } from '@/services/analytics.service';
 import { seedCategoriasDefault } from '@/services/categorias.service';
 import {
-  inserirLancamento, atualizarLancamento, marcarComoPago, desmarcarPago,
+  inserirLancamento, atualizarLancamento, marcarComoPago, desmarcarPago, excluirLancamento,
 } from '@/services/lancamentos.service';
 import { Lancamento, Categoria, FiltrosDashboard } from '@/types/financeiro';
-import { ChevronLeft, ChevronRight, Check, Plus, BarChart2, LogOut, Pencil } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Plus, BarChart2, LogOut, Pencil, Trash2 } from 'lucide-react';
 
 function formatMoeda(n: number) {
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -97,6 +97,15 @@ export default function MesPage() {
   const [addVenc, setAddVenc]     = useState('');
   const [addCatId, setAddCatId]   = useState('');
   const [addSaving, setAddSaving] = useState(false);
+
+  // Confirm delete
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  async function handleDelete(l: Lancamento) {
+    await excluirLancamento(l.id);
+    setLancamentos((prev) => prev.filter((x) => x.id !== l.id));
+    setConfirmDeleteId(null);
+  }
 
   // Inline valor edit
   const [editValorId, setEditValorId]   = useState<string | null>(null);
@@ -508,6 +517,34 @@ export default function MesPage() {
                         <Pencil size={10} className="opacity-0 group-hover/val:opacity-60 transition-opacity" />
                       </button>
                     )}
+                    {/* Delete */}
+                    {confirmDeleteId === l.id ? (
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(l)}
+                          className="text-xs text-red-400 hover:text-red-300 font-medium"
+                        >
+                          Excluir
+                        </button>
+                        <span className="text-slate-600 text-xs">|</span>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="text-xs text-slate-500 hover:text-slate-300"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteId(l.id)}
+                        className="flex-shrink-0 p-1.5 text-slate-600 hover:text-red-400 active:text-red-400 transition-colors rounded"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -604,6 +641,35 @@ export default function MesPage() {
                     >
                       {brl(l.valor)}
                       <Pencil size={10} className="opacity-0 group-hover/val:opacity-60 transition-opacity" />
+                    </button>
+                  )}
+
+                  {/* Delete */}
+                  {confirmDeleteId === l.id ? (
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(l)}
+                        className="text-xs text-red-400 hover:text-red-300 font-medium"
+                      >
+                        Excluir
+                      </button>
+                      <span className="text-slate-600 text-xs">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="text-xs text-slate-500 hover:text-slate-300"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteId(l.id)}
+                      className="flex-shrink-0 p-1.5 text-slate-600 hover:text-red-400 active:text-red-400 transition-colors rounded"
+                    >
+                      <Trash2 size={13} />
                     </button>
                   )}
                 </li>
