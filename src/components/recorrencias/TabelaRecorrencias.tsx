@@ -165,25 +165,25 @@ function RecorrenciaRow({
       </span>
 
       {/* Ações */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 shrink-0">
         <button
           onClick={() => onToggle(r)}
           title={r.ativo ? 'Pausar' : 'Ativar'}
-          className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors rounded"
+          className="p-2.5 text-slate-500 hover:text-slate-300 active:text-slate-300 transition-colors rounded-lg"
         >
           {r.ativo ? <ToggleRight size={16} className="text-violet-400" /> : <ToggleLeft size={16} />}
         </button>
         <button
           onClick={() => onEdit(r)}
           title="Editar"
-          className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors rounded"
+          className="p-2.5 text-slate-500 hover:text-slate-300 active:text-slate-300 transition-colors rounded-lg"
         >
           <Pencil size={14} />
         </button>
         <button
           onClick={() => onDelete(r)}
           title="Excluir"
-          className="p-1.5 text-slate-500 hover:text-rose-400 transition-colors rounded"
+          className="p-2.5 text-slate-500 hover:text-rose-400 active:text-rose-400 transition-colors rounded-lg"
         >
           <Trash2 size={14} />
         </button>

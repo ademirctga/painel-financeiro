@@ -261,20 +261,20 @@ export default function MesPage() {
     <div className="min-h-screen bg-[#0f1117] text-white">
       {/* Header */}
       <header className="border-b border-white/5 sticky top-0 z-10 bg-[#0f1117]/95 backdrop-blur-sm">
-        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
-          <h1 className="text-lg font-bold text-white">Meu Mês</h1>
-          <div className="flex items-center gap-4">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <h1 className="text-base sm:text-lg font-bold text-white">Meu Mês</h1>
+          <div className="flex items-center gap-2 sm:gap-4">
             <Link
               href="/analise"
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 active:text-slate-300 transition-colors p-1.5"
             >
-              <BarChart2 size={14} />
-              Análise
+              <BarChart2 size={16} />
+              <span className="hidden sm:inline">Análise</span>
             </Link>
             <button
               onClick={() => signOut().then(() => router.replace('/login'))}
               title="Sair"
-              className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors"
+              className="p-2 text-slate-500 hover:text-slate-300 active:text-slate-300 transition-colors"
             >
               <LogOut size={16} />
             </button>
@@ -282,7 +282,7 @@ export default function MesPage() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-6 py-6 space-y-5">
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
 
         {/* Month navigation */}
         <div className="flex items-center justify-between">

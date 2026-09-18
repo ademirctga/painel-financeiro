@@ -87,17 +87,17 @@ export default function RecorrenciasPage() {
     <div className="min-h-screen bg-[#0f1117] text-white">
       {/* Header */}
       <header className="border-b border-white/5 sticky top-0 z-10 bg-[#0f1117]/95 backdrop-blur-sm">
-        <div className="max-w-[1000px] mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-[1000px] mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
               href="/analise"
-              className="p-1.5 text-slate-400 hover:text-slate-200 transition-colors rounded-lg hover:bg-white/5"
+              className="p-2 text-slate-400 hover:text-slate-200 active:text-slate-200 transition-colors rounded-lg hover:bg-white/5"
             >
               <ArrowLeft size={16} />
             </Link>
             <div>
-              <h1 className="text-lg font-bold text-white">Recorrências</h1>
-              <p className="text-xs text-slate-500">Gastos e receitas fixas gerados automaticamente</p>
+              <h1 className="text-base sm:text-lg font-bold text-white">Recorrências</h1>
+              <p className="text-xs text-slate-500 hidden sm:block">Gastos e receitas fixas gerados automaticamente</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -105,7 +105,7 @@ export default function RecorrenciasPage() {
             <button
               onClick={() => signOut().then(() => router.replace('/login'))}
               title="Sair"
-              className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors"
+              className="p-2 text-slate-500 hover:text-slate-300 active:text-slate-300 transition-colors"
             >
               <LogOut size={16} />
             </button>
@@ -113,7 +113,7 @@ export default function RecorrenciasPage() {
         </div>
       </header>
 
-      <main className="max-w-[1000px] mx-auto px-6 py-6 space-y-5">
+      <main className="max-w-[1000px] mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
         {/* Summary cards */}
         <SummaryCards recorrencias={recorrencias} />
 
@@ -165,7 +165,7 @@ function SummaryCards({ recorrencias }: { recorrencias: Recorrencia[] }) {
   }
 
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div className="bg-[#1a1f2e] border border-white/5 rounded-xl p-4">
         <p className="text-xs text-slate-500 mb-1">Despesas fixas / mês</p>
         <p className="text-xl font-bold text-rose-400">{fmt(totalDespesas)}</p>

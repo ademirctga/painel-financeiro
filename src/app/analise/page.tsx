@@ -181,43 +181,43 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#0f1117] text-white">
       {/* Header */}
       <header className="border-b border-white/5 sticky top-0 z-10 bg-[#0f1117]/95 backdrop-blur-sm">
-        <div className="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-white">Painel Financeiro</h1>
-            <p className="text-xs text-slate-500">
+            <h1 className="text-base sm:text-lg font-bold text-white">Painel Financeiro</h1>
+            <p className="text-xs text-slate-500 hidden sm:block">
               {filtros.periodo.inicio} até {filtros.periodo.fim}
             </p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Link
               href="/mes"
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 active:text-slate-300 transition-colors p-1.5"
             >
-              <CalendarDays size={14} />
-              Mês
+              <CalendarDays size={16} />
+              <span className="hidden sm:inline">Mês</span>
             </Link>
             <Link
               href="/recorrencias"
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 active:text-slate-300 transition-colors p-1.5"
             >
-              <RefreshCw size={14} />
-              Fixos
+              <RefreshCw size={16} />
+              <span className="hidden sm:inline">Fixos</span>
             </Link>
-            <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${loading ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`} />
               <span className="text-xs text-slate-500">{loading ? 'Carregando...' : 'Atualizado'}</span>
             </div>
             <button
               onClick={() => router.push('/seed')}
               title="Dados de teste"
-              className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors"
+              className="hidden sm:block p-2 text-slate-500 hover:text-slate-300 transition-colors"
             >
               <Database size={16} />
             </button>
             <button
               onClick={() => signOut().then(() => router.replace('/login'))}
               title="Sair"
-              className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors"
+              className="p-2 text-slate-500 hover:text-slate-300 active:text-slate-300 transition-colors"
             >
               <LogOut size={16} />
             </button>
@@ -225,7 +225,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-[1600px] mx-auto px-6 py-6 space-y-5">
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-5">
         <BarraFiltros
           filtros={filtros}
           onPreset={setPreset}

@@ -58,7 +58,7 @@ export function ModalLixeira({ open, onClose, onRestored }: Props) {
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="w-full max-w-2xl bg-[#1a1f2e] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[80vh]">
+      <div className="w-full max-w-full sm:max-w-2xl bg-[#1a1f2e] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[85vh]">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/5 flex-shrink-0">
@@ -89,6 +89,7 @@ export function ModalLixeira({ open, onClose, onRestored }: Props) {
               <p className="text-sm text-slate-500">Lixeira vazia</p>
             </div>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-white/5">
@@ -125,7 +126,7 @@ export function ModalLixeira({ open, onClose, onRestored }: Props) {
                         onClick={() => handleRestore(item.id)}
                         disabled={restoring === item.id}
                         title="Restaurar"
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-emerald-400 hover:text-emerald-300 active:text-emerald-300 hover:bg-emerald-400/10 transition-colors disabled:opacity-50"
                       >
                         <RotateCcw size={12} className={restoring === item.id ? 'animate-spin' : ''} />
                         Restaurar
@@ -135,6 +136,7 @@ export function ModalLixeira({ open, onClose, onRestored }: Props) {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

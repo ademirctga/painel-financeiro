@@ -174,7 +174,7 @@ export function ModalRecorrencia({ open, onClose, onSaved, editData }: Props) {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-lg bg-[#1a1f2e] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-white/5">
           <h2 className="text-base font-semibold text-white">
             {editData ? 'Editar Recorrência' : 'Nova Recorrência'}
           </h2>
@@ -184,7 +184,7 @@ export function ModalRecorrencia({ open, onClose, onSaved, editData }: Props) {
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-4">
           {/* Tipo */}
           <div className="grid grid-cols-2 gap-2">
             {(['despesa', 'receita'] as const).map((t) => (
@@ -233,7 +233,7 @@ export function ModalRecorrencia({ open, onClose, onSaved, editData }: Props) {
           </div>
 
           {/* Frequência + Dia */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={LABEL}>Frequência</label>
               <select
@@ -261,7 +261,7 @@ export function ModalRecorrencia({ open, onClose, onSaved, editData }: Props) {
           </div>
 
           {/* Datas */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={LABEL}>Início *</label>
               <input
@@ -295,7 +295,7 @@ export function ModalRecorrencia({ open, onClose, onSaved, editData }: Props) {
           </div>
 
           {/* Método + Centro */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={LABEL}>Método</label>
               <select value={metodoId} onChange={(e) => setMetodoId(e.target.value)} className={INPUT}>
@@ -318,7 +318,7 @@ export function ModalRecorrencia({ open, onClose, onSaved, editData }: Props) {
         </form>
 
         {/* Footer */}
-        <div className="flex gap-3 px-6 py-4 border-t border-white/5">
+        <div className="flex gap-3 px-4 sm:px-6 py-4 border-t border-white/5">
           <button
             type="button"
             onClick={onClose}

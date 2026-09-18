@@ -323,8 +323,8 @@ export function ModalLancamento({ open, onClose, onSaved, editId }: Props) {
               {errors.descricao && <p className="text-xs text-red-400 mt-1">{errors.descricao}</p>}
             </div>
 
-            {/* Categoria + Data competência */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Categoria + Data vencimento */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className={LABEL}>Categoria</label>
                 <select

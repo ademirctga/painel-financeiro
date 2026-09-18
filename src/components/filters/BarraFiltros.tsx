@@ -81,7 +81,7 @@ export function BarraFiltros({ filtros, onPreset, onRegime, onBusca, onNatureza,
         ))}
       </div>
 
-      <div className="w-px h-5 bg-white/10" />
+      <div className="hidden sm:block w-px h-5 bg-white/10" />
 
       {/* Regime */}
       <div className="flex gap-1">
@@ -100,7 +100,7 @@ export function BarraFiltros({ filtros, onPreset, onRegime, onBusca, onNatureza,
         ))}
       </div>
 
-      <div className="w-px h-5 bg-white/10" />
+      <div className="hidden sm:block w-px h-5 bg-white/10" />
 
       {/* Natureza */}
       <div className="flex gap-1">
@@ -119,7 +119,7 @@ export function BarraFiltros({ filtros, onPreset, onRegime, onBusca, onNatureza,
         ))}
       </div>
 
-      <div className="flex-1 min-w-[160px]">
+      <div className="w-full sm:flex-1 sm:min-w-[160px]">
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
