@@ -144,9 +144,9 @@ export function TabelaLancamentos({ data, onNovo, onEdit, onDelete, onMarkPago, 
                   </span>
                 </th>
               ))}
-              <th className="px-4 py-3 text-left text-slate-500 font-medium">Categoria</th>
-              <th className="px-4 py-3 text-left text-slate-500 font-medium">Método</th>
-              <th className="px-4 py-3 w-[90px]" />
+              <th className="px-4 py-3 text-left text-slate-500 font-medium hidden sm:table-cell">Categoria</th>
+              <th className="px-4 py-3 text-left text-slate-500 font-medium hidden md:table-cell">Método</th>
+              <th className="px-4 py-3 w-[80px]" />
             </tr>
           </thead>
           <tbody>
@@ -215,7 +215,7 @@ export function TabelaLancamentos({ data, onNovo, onEdit, onDelete, onMarkPago, 
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 hidden sm:table-cell">
                   {l.categoriaNome && (
                     <span
                       className="px-1.5 py-0.5 rounded text-xs"
@@ -228,7 +228,7 @@ export function TabelaLancamentos({ data, onNovo, onEdit, onDelete, onMarkPago, 
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-slate-500">{l.metodoNome || '—'}</td>
+                <td className="px-4 py-3 text-slate-500 hidden md:table-cell">{l.metodoNome || '—'}</td>
 
                 {/* Actions */}
                 <td className="px-4 py-3">
@@ -249,18 +249,18 @@ export function TabelaLancamentos({ data, onNovo, onEdit, onDelete, onMarkPago, 
                       </button>
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => onEdit(l.id)}
                         title="Editar"
-                        className="p-1.5 text-slate-500 hover:text-slate-200 hover:bg-white/10 rounded transition-colors"
+                        className="p-2 text-slate-500 hover:text-slate-200 active:text-slate-200 hover:bg-white/10 rounded transition-colors"
                       >
                         <Pencil size={13} />
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(l.id)}
                         title="Excluir"
-                        className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+                        className="p-2 text-slate-500 hover:text-red-400 active:text-red-400 hover:bg-red-400/10 rounded transition-colors"
                       >
                         <Trash2 size={13} />
                       </button>
