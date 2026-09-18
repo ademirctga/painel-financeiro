@@ -9,8 +9,9 @@ import { seedCategoriasDefault } from '@/services/categorias.service';
 import {
   inserirLancamento, atualizarLancamento, marcarComoPago, desmarcarPago, excluirLancamento,
 } from '@/services/lancamentos.service';
-import { Lancamento, Categoria, FiltrosDashboard } from '@/types/financeiro';
-import { ChevronLeft, ChevronRight, Check, Plus, BarChart2, LogOut, Pencil, Trash2 } from 'lucide-react';
+import { Lancamento, Categoria, FiltrosDashboard, Recorrencia } from '@/types/financeiro';
+import { fetchRecorrencias, inserirRecorrencia, excluirRecorrencia } from '@/services/recorrencias.service';
+import { ChevronLeft, ChevronRight, Check, Plus, BarChart2, LogOut, Pencil, Trash2, RefreshCw } from 'lucide-react';
 
 function formatMoeda(n: number) {
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -98,8 +99,60 @@ export default function MesPage() {
   const [addCatId, setAddCatId]   = useState('');
   const [addSaving, setAddSaving] = useState(false);
 
+  // Recorrencias
+  const [recorrencias, setRecorrencias]   = useState<Recorrencia[]>([]);
+  const [togglingId, setTogglingId]       = useState<string | null>(null);
+
   // Confirm delete
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  function isRecorrente(l: Lancamento): boolean {
+    const desc = l.descricao.toLowerCase().trim();
+    return recorrencias.some((r) => r.descricao.toLowerCase().trim() === desc);
+  }
+
+  async function handleToggleRecorrente(l: Lancamento) {
+    if (togglingId === l.id) return;
+    setTogglingId(l.id);
+    const desc = l.descricao.toLowerCase().trim();
+    const existente = recorrencias.find((r) => r.descricao.toLowerCase().trim() === desc);
+    if (existente) {
+      const ok = await excluirRecorrencia(existente.id);
+      if (ok) setRecorrencias((prev) => prev.filter((r) => r.id !== existente.id));
+    } else {
+      const day = parseInt(l.dataCompetencia.split('-')[2], 10);
+      const dataInicio = monthPeriod(nextMonth(mes)).inicio;
+      const result = await inserirRecorrencia({
+        descricao: l.descricao,
+        valor: l.valor,
+        tipo: 'despesa',
+        frequencia: 'mensal',
+        diaReferencia: day,
+        dataInicio,
+        categoriaId: l.categoriaId ?? null,
+      });
+      if ('id' in result) {
+        setRecorrencias((prev) => [
+          ...prev,
+          {
+            id: result.id,
+            descricao: l.descricao,
+            valor: l.valor,
+            tipo: 'despesa',
+            frequencia: 'mensal',
+            diaReferencia: day,
+            dataInicio,
+            dataFim: null,
+            ativo: true,
+            categoriaId: l.categoriaId ?? null,
+            metodoId: null,
+            centroCustoId: null,
+          },
+        ]);
+      }
+    }
+    setTogglingId(null);
+  }
 
   async function handleDelete(l: Lancamento) {
     await excluirLancamento(l.id);
@@ -139,6 +192,12 @@ export default function MesPage() {
   useEffect(() => {
     if (!authLoading && !session) router.replace('/login');
   }, [session, authLoading, router]);
+
+  // Fetch recorrencias once per session
+  useEffect(() => {
+    if (!session) return;
+    fetchRecorrencias().then(setRecorrencias);
+  }, [session]);
 
   // Fetch categorias once + seed defaults in background
   useEffect(() => {
@@ -517,6 +576,20 @@ export default function MesPage() {
                         <Pencil size={10} className="opacity-0 group-hover/val:opacity-60 transition-opacity" />
                       </button>
                     )}
+                    {/* Recurring toggle */}
+                    <button
+                      type="button"
+                      onClick={() => handleToggleRecorrente(l)}
+                      disabled={togglingId === l.id}
+                      title={isRecorrente(l) ? 'Remover recorrência' : 'Tornar fixo nos próximos meses'}
+                      className={`flex-shrink-0 p-1.5 transition-colors rounded disabled:opacity-40 ${
+                        isRecorrente(l)
+                          ? 'text-violet-400 hover:text-violet-300 active:text-violet-300'
+                          : 'text-slate-600 hover:text-slate-400 active:text-slate-400'
+                      }`}
+                    >
+                      <RefreshCw size={13} className={togglingId === l.id ? 'animate-spin' : ''} />
+                    </button>
                     {/* Delete */}
                     {confirmDeleteId === l.id ? (
                       <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -644,6 +717,20 @@ export default function MesPage() {
                     </button>
                   )}
 
+                  {/* Recurring toggle */}
+                  <button
+                    type="button"
+                    onClick={() => handleToggleRecorrente(l)}
+                    disabled={togglingId === l.id}
+                    title={isRecorrente(l) ? 'Remover recorrência' : 'Tornar fixo nos próximos meses'}
+                    className={`flex-shrink-0 p-1.5 transition-colors rounded disabled:opacity-40 ${
+                      isRecorrente(l)
+                        ? 'text-violet-400 hover:text-violet-300 active:text-violet-300'
+                        : 'text-slate-600 hover:text-slate-400 active:text-slate-400'
+                    }`}
+                  >
+                    <RefreshCw size={13} className={togglingId === l.id ? 'animate-spin' : ''} />
+                  </button>
                   {/* Delete */}
                   {confirmDeleteId === l.id ? (
                     <div className="flex items-center gap-1.5 flex-shrink-0">
