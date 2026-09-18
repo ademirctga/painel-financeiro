@@ -340,7 +340,7 @@ export function ModalLancamento({ open, onClose, onSaved, editId }: Props) {
                 </select>
               </div>
               <div>
-                <label className={LABEL}>Competência *</label>
+                <label className={LABEL}>Vencimento *</label>
                 <input
                   type="date"
                   value={dataComp}
@@ -354,30 +354,6 @@ export function ModalLancamento({ open, onClose, onSaved, editId }: Props) {
                 {errors.dataCompetencia && (
                   <p className="text-xs text-red-400 mt-1">{errors.dataCompetencia}</p>
                 )}
-              </div>
-            </div>
-
-            {/* Status */}
-            <div>
-              <label className={LABEL}>Status</label>
-              <div className="flex gap-2">
-                {(['previsto', 'pago'] as const).map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setStatus(s)}
-                    disabled={loadingData}
-                    className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors border ${
-                      status === s
-                        ? s === 'pago'
-                          ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
-                          : 'bg-amber-500/20 border-amber-500/40 text-amber-400'
-                        : 'border-white/10 text-slate-500 hover:text-slate-300 hover:border-white/20'
-                    } disabled:opacity-50`}
-                  >
-                    {s === 'previsto' ? 'Previsto' : 'Pago'}
-                  </button>
-                ))}
               </div>
             </div>
 

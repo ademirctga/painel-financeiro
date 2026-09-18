@@ -18,6 +18,13 @@ interface Props {
 
 type SortKey = 'dataCompetencia' | 'valor' | 'descricao' | 'status';
 
+const STATUS_LABELS: Record<string, string> = {
+  previsto: 'A pagar',
+  pago: 'Pago',
+  atrasado: 'Atrasado',
+  cancelado: 'Cancelado',
+};
+
 function parseMoeda(raw: string): number {
   return parseFloat(raw.replace(/\./g, '').replace(',', '.')) || 0;
 }
@@ -194,7 +201,7 @@ export function TabelaLancamentos({ data, onNovo, onEdit, onDelete, onMarkPago, 
                         color: STATUS_COLORS[l.status],
                       }}
                     >
-                      {l.status}
+                      {STATUS_LABELS[l.status] ?? l.status}
                     </button>
                   ) : (
                     <span
@@ -204,7 +211,7 @@ export function TabelaLancamentos({ data, onNovo, onEdit, onDelete, onMarkPago, 
                         color: STATUS_COLORS[l.status],
                       }}
                     >
-                      {l.status}
+                      {STATUS_LABELS[l.status] ?? l.status}
                     </span>
                   )}
                 </td>
