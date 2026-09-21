@@ -1,5 +1,8 @@
 'use client';
 
+// Module-level: survives component remounts and SPA navigations within the same tab
+const _generatedMonths = new Set<string>();
+
 import { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -160,9 +163,6 @@ export default function MesPage() {
     setConfirmDeleteId(null);
   }
 
-  // Tracks which months already had recurring generation attempted this mount
-  const generatedMonthsRef = useRef<Set<string>>(new Set());
-
   // Inline valor edit
   const [editValorId, setEditValorId]   = useState<string | null>(null);
   const [editValorRaw, setEditValorRaw] = useState('');
@@ -235,11 +235,11 @@ export default function MesPage() {
       });
     };
 
-    if (generatedMonthsRef.current.has(mesKey)) {
+    if (_generatedMonths.has(mesKey)) {
       doFetch();
       return;
     }
-    generatedMonthsRef.current.add(mesKey);
+    _generatedMonths.add(mesKey);
     limparDuplicatasRecorrencia(y, m)
       .then(() => gerarLancamentosParaMes(y, m))
       .then(doFetch);
