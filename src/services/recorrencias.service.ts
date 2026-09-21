@@ -175,6 +175,37 @@ function deveGerarNoMes(rec: Recorrencia, year: number, month: number): boolean 
   }
 }
 
+export async function limparDuplicatasRecorrencia(year: number, month: number): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { data } = await supabase
+    .from('lancamentos')
+    .select('id, recorrencia_id, created_at')
+    .eq('user_id', user.id)
+    .gte('data_competencia', `${mesCompetenciaKey(year, month)}-01`)
+    .lte('data_competencia', `${mesCompetenciaKey(year, month)}-31`)
+    .not('recorrencia_id', 'is', null)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true });
+
+  if (!data || data.length === 0) return;
+
+  // Keep only the first (oldest) per recorrencia_id, delete the rest
+  const seen = new Map<string, string>();
+  const toDelete: string[] = [];
+  for (const row of data as { id: string; recorrencia_id: string; created_at: string }[]) {
+    if (seen.has(row.recorrencia_id)) {
+      toDelete.push(row.id);
+    } else {
+      seen.set(row.recorrencia_id, row.id);
+    }
+  }
+  if (toDelete.length > 0) {
+    await supabase.from('lancamentos').update({ deleted_at: new Date().toISOString() }).in('id', toDelete);
+  }
+}
+
 export async function gerarLancamentosParaMes(year: number, month: number): Promise<number> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return 0;
