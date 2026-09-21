@@ -39,6 +39,7 @@ function mapLancamento(r: any): Lancamento {
     parcelaNumero: r.parcela_numero ?? null,
     parcelaTotal: r.parcela_total ?? null,
     tags: r.tags ?? [],
+    recorrenciaId: r.recorrencia_id ?? null,
     observacao: r.observacao ?? null,
     anexoUrl: r.anexo_url ?? null,
   };
@@ -91,7 +92,7 @@ export async function fetchLancamentos(filtros: FiltrosDashboard): Promise<Lanca
     .select(
       'id, tipo, descricao, valor, data_competencia, data_pagamento, status, ' +
       'categoria_id, categoria_nome, categoria_cor, natureza, fornecedor_nome, ' +
-      'metodo_nome, centro_custo_nome, parcela_numero, parcela_total, tags, observacao, anexo_url'
+      'metodo_nome, centro_custo_nome, parcela_numero, parcela_total, tags, observacao, anexo_url, recorrencia_id'
     )
     .order('data_competencia', { ascending: false })
     .limit(500);
@@ -246,7 +247,7 @@ export async function fetchTopGastos(filtros: FiltrosDashboard, limit = 10): Pro
     .select(
       'id, tipo, descricao, valor, data_competencia, data_pagamento, status, ' +
       'categoria_id, categoria_nome, categoria_cor, natureza, fornecedor_nome, ' +
-      'metodo_nome, centro_custo_nome, parcela_numero, parcela_total, tags, observacao, anexo_url'
+      'metodo_nome, centro_custo_nome, parcela_numero, parcela_total, tags, observacao, anexo_url, recorrencia_id'
     )
     .eq('tipo', 'despesa')
     .order('valor', { ascending: false })

@@ -18,6 +18,7 @@ export interface Lancamento {
   fornecedorNome?: string;
   metodoNome?: string;
   centroCustoNome?: string;
+  recorrenciaId?: string | null;
   parcelaNumero: number | null;
   parcelaTotal: number | null;
   tags: string[];

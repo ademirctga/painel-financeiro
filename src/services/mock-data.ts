@@ -78,6 +78,7 @@ function genMonth(year: number, month: number, offset: number): Lancamento[] {
       natureza: d.nat,
       metodoNome: d.metNome,
       centroCustoNome: 'Pessoal',
+      recorrenciaId: null,
       parcelaNumero: null,
       parcelaTotal: null,
       tags: [],
