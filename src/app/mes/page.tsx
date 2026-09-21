@@ -1,8 +1,5 @@
 'use client';
 
-// Module-level: survives component remounts and SPA navigations within the same tab
-const _generatedMonths = new Set<string>();
-
 import { useRef, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -12,9 +9,11 @@ import { seedCategoriasDefault } from '@/services/categorias.service';
 import {
   inserirLancamento, atualizarLancamento, marcarComoPago, desmarcarPago, excluirLancamento,
 } from '@/services/lancamentos.service';
-import { Lancamento, Categoria, FiltrosDashboard, Recorrencia } from '@/types/financeiro';
-import { fetchRecorrencias, inserirRecorrencia, excluirRecorrencia, gerarLancamentosParaMes, limparDuplicatasRecorrencia } from '@/services/recorrencias.service';
-import { ChevronLeft, ChevronRight, Check, Plus, BarChart2, LogOut, Pencil, Trash2, RefreshCw } from 'lucide-react';
+import { Lancamento, Categoria, FiltrosDashboard } from '@/types/financeiro';
+import {
+  atualizarRecorrencia, gerarLancamentosParaMes, propagarValorRecorrencia,
+} from '@/services/recorrencias.service';
+import { ChevronLeft, ChevronRight, Check, Plus, BarChart2, LogOut, Pencil, Trash2, Repeat2 } from 'lucide-react';
 
 function formatMoeda(n: number) {
   return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -102,60 +101,8 @@ export default function MesPage() {
   const [addCatId, setAddCatId]   = useState('');
   const [addSaving, setAddSaving] = useState(false);
 
-  // Recorrencias
-  const [recorrencias, setRecorrencias]   = useState<Recorrencia[]>([]);
-  const [togglingId, setTogglingId]       = useState<string | null>(null);
-
   // Confirm delete
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-
-  function isRecorrente(l: Lancamento): boolean {
-    const desc = l.descricao.toLowerCase().trim();
-    return recorrencias.some((r) => r.descricao.toLowerCase().trim() === desc);
-  }
-
-  async function handleToggleRecorrente(l: Lancamento) {
-    if (togglingId === l.id) return;
-    setTogglingId(l.id);
-    const desc = l.descricao.toLowerCase().trim();
-    const existente = recorrencias.find((r) => r.descricao.toLowerCase().trim() === desc);
-    if (existente) {
-      const ok = await excluirRecorrencia(existente.id);
-      if (ok) setRecorrencias((prev) => prev.filter((r) => r.id !== existente.id));
-    } else {
-      const day = parseInt(l.dataCompetencia.split('-')[2], 10);
-      const dataInicio = monthPeriod(nextMonth(mes)).inicio;
-      const result = await inserirRecorrencia({
-        descricao: l.descricao,
-        valor: l.valor,
-        tipo: 'despesa',
-        frequencia: 'mensal',
-        diaReferencia: day,
-        dataInicio,
-        categoriaId: l.categoriaId ?? null,
-      });
-      if ('id' in result) {
-        setRecorrencias((prev) => [
-          ...prev,
-          {
-            id: result.id,
-            descricao: l.descricao,
-            valor: l.valor,
-            tipo: 'despesa',
-            frequencia: 'mensal',
-            diaReferencia: day,
-            dataInicio,
-            dataFim: null,
-            ativo: true,
-            categoriaId: l.categoriaId ?? null,
-            metodoId: null,
-            centroCustoId: null,
-          },
-        ]);
-      }
-    }
-    setTogglingId(null);
-  }
 
   async function handleDelete(l: Lancamento) {
     await excluirLancamento(l.id);
@@ -182,6 +129,13 @@ export default function MesPage() {
     if (novo > 0 && novo !== l.valor) {
       setLancamentos((prev) => prev.map((x) => x.id === l.id ? { ...x, valor: novo } : x));
       await atualizarLancamento(l.id, { valor: novo });
+      if (l.recorrenciaId) {
+        const nextMes = nextMonth(mes);
+        await Promise.all([
+          atualizarRecorrencia(l.recorrenciaId, { valor: novo }),
+          propagarValorRecorrencia(l.recorrenciaId, novo, `${nextMes}-01`),
+        ]);
+      }
     }
   }
 
@@ -196,12 +150,6 @@ export default function MesPage() {
     if (!authLoading && !session) router.replace('/login');
   }, [session, authLoading, router]);
 
-  // Fetch recorrencias once per session
-  useEffect(() => {
-    if (!session) return;
-    fetchRecorrencias().then(setRecorrencias);
-  }, [session]);
-
   // Fetch categorias once + seed defaults in background
   useEffect(() => {
     if (!session) return;
@@ -209,14 +157,14 @@ export default function MesPage() {
     seedCategoriasDefault().then(() => fetchCategorias().then(setCategorias)).catch(() => {});
   }, [session]);
 
-  // Fetch lancamentos when month or refreshKey changes + auto-detect overdue
+  // Gera recorrências do mês e carrega lançamentos
   useEffect(() => {
     if (!session) return;
     setLoading(true);
     const mesKey = mes;
     const [y, m] = mes.split('-').map(Number);
 
-    const doFetch = () => {
+    gerarLancamentosParaMes(y, m).then(() => {
       fetchLancamentos(filtrosParaMes(mesKey)).then((l) => {
         const today = new Date().toISOString().slice(0, 10);
         const toUpdate = l.filter(
@@ -233,16 +181,7 @@ export default function MesPage() {
         }
         setLoading(false);
       });
-    };
-
-    if (_generatedMonths.has(mesKey)) {
-      doFetch();
-      return;
-    }
-    _generatedMonths.add(mesKey);
-    limparDuplicatasRecorrencia(y, m)
-      .then(() => gerarLancamentosParaMes(y, m))
-      .then(doFetch);
+    });
   }, [session, mes, refreshKey]);
 
   // ── derived ────────────────────────────────────────────────────────────────
@@ -349,6 +288,13 @@ export default function MesPage() {
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <h1 className="text-base sm:text-lg font-bold text-white">Meu Mês</h1>
           <div className="flex items-center gap-2 sm:gap-4">
+            <Link
+              href="/recorrencias"
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 active:text-slate-300 transition-colors p-1.5"
+            >
+              <Repeat2 size={16} />
+              <span className="hidden sm:inline">Recorrências</span>
+            </Link>
             <Link
               href="/analise"
               className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 active:text-slate-300 transition-colors p-1.5"
@@ -593,20 +539,6 @@ export default function MesPage() {
                         <Pencil size={10} className="opacity-0 group-hover/val:opacity-60 transition-opacity" />
                       </button>
                     )}
-                    {/* Recurring toggle */}
-                    <button
-                      type="button"
-                      onClick={() => handleToggleRecorrente(l)}
-                      disabled={togglingId === l.id}
-                      title={isRecorrente(l) ? 'Remover recorrência' : 'Tornar fixo nos próximos meses'}
-                      className={`flex-shrink-0 p-1.5 transition-colors rounded disabled:opacity-40 ${
-                        isRecorrente(l)
-                          ? 'text-violet-400 hover:text-violet-300 active:text-violet-300'
-                          : 'text-slate-600 hover:text-slate-400 active:text-slate-400'
-                      }`}
-                    >
-                      <RefreshCw size={13} className={togglingId === l.id ? 'animate-spin' : ''} />
-                    </button>
                     {/* Delete */}
                     {confirmDeleteId === l.id ? (
                       <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -734,20 +666,6 @@ export default function MesPage() {
                     </button>
                   )}
 
-                  {/* Recurring toggle */}
-                  <button
-                    type="button"
-                    onClick={() => handleToggleRecorrente(l)}
-                    disabled={togglingId === l.id}
-                    title={isRecorrente(l) ? 'Remover recorrência' : 'Tornar fixo nos próximos meses'}
-                    className={`flex-shrink-0 p-1.5 transition-colors rounded disabled:opacity-40 ${
-                      isRecorrente(l)
-                        ? 'text-violet-400 hover:text-violet-300 active:text-violet-300'
-                        : 'text-slate-600 hover:text-slate-400 active:text-slate-400'
-                    }`}
-                  >
-                    <RefreshCw size={13} className={togglingId === l.id ? 'animate-spin' : ''} />
-                  </button>
                   {/* Delete */}
                   {confirmDeleteId === l.id ? (
                     <div className="flex items-center gap-1.5 flex-shrink-0">
