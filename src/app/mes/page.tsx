@@ -10,7 +10,7 @@ import {
   inserirLancamento, atualizarLancamento, marcarComoPago, desmarcarPago, excluirLancamento,
 } from '@/services/lancamentos.service';
 import { Lancamento, Categoria, FiltrosDashboard, Recorrencia } from '@/types/financeiro';
-import { fetchRecorrencias, inserirRecorrencia, excluirRecorrencia } from '@/services/recorrencias.service';
+import { fetchRecorrencias, inserirRecorrencia, excluirRecorrencia, gerarLancamentosParaMes } from '@/services/recorrencias.service';
 import { ChevronLeft, ChevronRight, Check, Plus, BarChart2, LogOut, Pencil, Trash2, RefreshCw } from 'lucide-react';
 
 function formatMoeda(n: number) {
@@ -210,7 +210,8 @@ export default function MesPage() {
   useEffect(() => {
     if (!session) return;
     setLoading(true);
-    fetchLancamentos(filtrosParaMes(mes)).then((l) => {
+    const [y, m] = mes.split('-').map(Number);
+    gerarLancamentosParaMes(y, m).then(() => fetchLancamentos(filtrosParaMes(mes))).then((l) => {
       const today = new Date().toISOString().slice(0, 10);
       const toUpdate = l.filter(
         (item) => item.tipo === 'despesa' && item.status === 'previsto' && item.dataCompetencia < today
