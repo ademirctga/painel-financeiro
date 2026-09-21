@@ -179,9 +179,9 @@ export async function limparDuplicatasRecorrencia(year: number, month: number): 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  const { data } = await supabase
+  const { data: gerados } = await supabase
     .from('lancamentos')
-    .select('id, recorrencia_id, created_at')
+    .select('id, descricao, recorrencia_id, created_at')
     .eq('user_id', user.id)
     .gte('data_competencia', `${mesCompetenciaKey(year, month)}-01`)
     .lte('data_competencia', `${mesCompetenciaKey(year, month)}-31`)
@@ -189,20 +189,36 @@ export async function limparDuplicatasRecorrencia(year: number, month: number): 
     .is('deleted_at', null)
     .order('created_at', { ascending: true });
 
-  if (!data || data.length === 0) return;
+  if (!gerados || gerados.length <= 1) return;
 
-  // Keep only the first (oldest) per recorrencia_id, delete the rest
-  const seen = new Map<string, string>();
+  // Find currently active recorrencia IDs
+  const { data: ativas } = await supabase.from('recorrencias').select('id').eq('ativo', true);
+  const ativasSet = new Set((ativas ?? []).map((r: { id: string }) => r.id));
+
+  // Per description: keep one entry (prefer active recorrencia; orphaned ones get deleted)
+  const keptDesc = new Map<string, boolean>(); // descKey -> kept?
   const toDelete: string[] = [];
-  for (const row of data as { id: string; recorrencia_id: string; created_at: string }[]) {
-    if (seen.has(row.recorrencia_id)) {
-      toDelete.push(row.id);
+
+  for (const row of gerados as { id: string; descricao: string; recorrencia_id: string }[]) {
+    const key = (row.descricao ?? '').toLowerCase().trim();
+    const isAtiva = ativasSet.has(row.recorrencia_id);
+
+    if (!keptDesc.has(key)) {
+      if (isAtiva) {
+        keptDesc.set(key, true); // keep this one
+      } else {
+        toDelete.push(row.id);  // orphaned – delete, don't mark as kept
+      }
     } else {
-      seen.set(row.recorrencia_id, row.id);
+      toDelete.push(row.id);    // already have a keeper for this description
     }
   }
+
   if (toDelete.length > 0) {
-    await supabase.from('lancamentos').update({ deleted_at: new Date().toISOString() }).in('id', toDelete);
+    await supabase
+      .from('lancamentos')
+      .update({ deleted_at: new Date().toISOString() })
+      .in('id', toDelete);
   }
 }
 
@@ -215,16 +231,21 @@ export async function gerarLancamentosParaMes(year: number, month: number): Prom
 
   const { data: existentes } = await supabase
     .from('lancamentos')
-    .select('recorrencia_id')
+    .select('recorrencia_id, descricao')
     .eq('user_id', user.id)
     .gte('data_competencia', `${mesCompetenciaKey(year, month)}-01`)
     .lte('data_competencia', `${mesCompetenciaKey(year, month)}-31`)
-    .not('recorrencia_id', 'is', null);
+    .not('recorrencia_id', 'is', null)
+    .is('deleted_at', null);
 
-  const geradosIds = new Set((existentes ?? []).map((l: { recorrencia_id: string }) => l.recorrencia_id));
+  const geradosIds   = new Set((existentes ?? []).map((l: { recorrencia_id: string }) => l.recorrencia_id));
+  const geradosDescs = new Set((existentes ?? []).map((l: { descricao: string }) => (l.descricao ?? '').toLowerCase().trim()));
 
   const paraGerar = recorrencias.filter(
-    (r) => deveGerarNoMes(r, year, month) && !geradosIds.has(r.id)
+    (r) =>
+      deveGerarNoMes(r, year, month) &&
+      !geradosIds.has(r.id) &&
+      !geradosDescs.has(r.descricao.toLowerCase().trim())
   );
 
   if (paraGerar.length === 0) return 0;
