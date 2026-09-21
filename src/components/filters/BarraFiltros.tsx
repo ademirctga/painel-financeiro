@@ -18,8 +18,9 @@ interface Props {
 }
 
 const PRESETS: { key: FiltrosDashboard['preset']; label: string }[] = [
-  { key: 'mes_atual', label: 'Mês atual' },
   { key: 'mes_anterior', label: 'Mês anterior' },
+  { key: 'mes_atual', label: 'Mês atual' },
+  { key: 'proximo_mes', label: 'Próximo mês' },
   { key: 'ultimos_3m', label: '3 meses' },
   { key: 'ultimos_12m', label: '12 meses' },
   { key: 'ano', label: 'Este ano' },

@@ -61,7 +61,7 @@ export interface Kpis {
 
 export interface FiltrosDashboard {
   periodo: { inicio: string; fim: string };
-  preset: 'mes_atual' | 'mes_anterior' | 'ultimos_3m' | 'ultimos_12m' | 'ano' | 'custom';
+  preset: 'mes_atual' | 'proximo_mes' | 'mes_anterior' | 'ultimos_3m' | 'ultimos_12m' | 'ano' | 'custom';
   regime: 'competencia' | 'caixa';
   centrosCusto: string[];
   categorias: string[];

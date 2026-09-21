@@ -11,6 +11,11 @@ export function getPresetPeriodo(preset: FiltrosDashboard['preset']): { inicio: 
         inicio: new Date(y, m, 1).toISOString().slice(0, 10),
         fim: new Date(y, m + 1, 0).toISOString().slice(0, 10),
       };
+    case 'proximo_mes':
+      return {
+        inicio: new Date(y, m + 1, 1).toISOString().slice(0, 10),
+        fim: new Date(y, m + 2, 0).toISOString().slice(0, 10),
+      };
     case 'mes_anterior':
       return {
         inicio: new Date(y, m - 1, 1).toISOString().slice(0, 10),

@@ -16,7 +16,7 @@ import type { LancamentoInput } from '@/services/lancamentos.service';
 import type { SaveResult } from '@/components/lancamentos/ModalLancamento';
 import { useAuth } from '@/context/AuthContext';
 import { Kpis, Lancamento, MensalCategoria } from '@/types/financeiro';
-import { LogOut, Database, Plus, CalendarDays, RefreshCw } from 'lucide-react';
+import { LogOut, Database, Plus, CalendarDays, RefreshCw, RotateCcw } from 'lucide-react';
 import { gerarLancamentosDoMes } from '@/services/recorrencias.service';
 import { seedCategoriasDefault } from '@/services/categorias.service';
 
@@ -40,6 +40,7 @@ export default function DashboardPage() {
   const [mensal, setMensal]        = useState<MensalCategoria[]>([]);
   const [loading, setLoading]      = useState(true);
   const [sugestoes, setSugestoes]  = useState<DescricaoSugestao[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // ── modal + toast ────────────────────────────────────────────────────────
   const [modalOpen, setModalOpen]      = useState(false);
@@ -95,7 +96,8 @@ export default function DashboardPage() {
       setMensal(filtros.busca ? computeMensalFromLancamentos(l, filtros.regime) : m);
       setLoading(false);
     });
-  }, [filtros, session]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtros, session, refreshKey]);
 
   // ── helpers ─────────────────────────────────────────────────────────────
   function showToast(message: string, onUndo?: () => void) {
@@ -203,6 +205,14 @@ export default function DashboardPage() {
               <RefreshCw size={16} />
               <span className="hidden sm:inline">Fixos</span>
             </Link>
+            <button
+              onClick={() => setRefreshKey((k) => k + 1)}
+              disabled={loading}
+              title="Recarregar dados"
+              className="p-2 text-slate-500 hover:text-slate-300 active:text-slate-300 transition-colors disabled:opacity-40"
+            >
+              <RotateCcw size={16} className={loading ? 'animate-spin' : ''} />
+            </button>
             <div className="hidden sm:flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${loading ? 'bg-amber-400 animate-pulse' : 'bg-emerald-400'}`} />
               <span className="text-xs text-slate-500">{loading ? 'Carregando...' : 'Atualizado'}</span>
