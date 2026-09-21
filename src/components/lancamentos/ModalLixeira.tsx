@@ -5,6 +5,7 @@ import { X, RotateCcw, Trash2 } from 'lucide-react';
 import {
   fetchLancamentosExcluidos,
   restaurarLancamento,
+  esvaziarLixeira,
   LancamentoExcluido,
 } from '@/services/lancamentos.service';
 import { formatBRL, formatDate } from '@/lib/format';
@@ -16,9 +17,11 @@ interface Props {
 }
 
 export function ModalLixeira({ open, onClose, onRestored }: Props) {
-  const [items, setItems]       = useState<LancamentoExcluido[]>([]);
-  const [loading, setLoading]   = useState(false);
+  const [items, setItems]         = useState<LancamentoExcluido[]>([]);
+  const [loading, setLoading]     = useState(false);
   const [restoring, setRestoring] = useState<string | null>(null);
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
+  const [emptying, setEmptying]   = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -40,6 +43,14 @@ export function ModalLixeira({ open, onClose, onRestored }: Props) {
     if (open) document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
   }, [open]);
+
+  async function handleEsvaziar() {
+    setEmptying(true);
+    const ok = await esvaziarLixeira();
+    if (ok) setItems([]);
+    setEmptying(false);
+    setConfirmEmpty(false);
+  }
 
   async function handleRestore(id: string) {
     setRestoring(id);
@@ -69,12 +80,41 @@ export function ModalLixeira({ open, onClose, onRestored }: Props) {
               <span className="text-xs text-slate-600">({items.length})</span>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-500 hover:text-slate-300 transition-colors p-1 rounded-lg hover:bg-white/5"
-          >
-            <X size={16} />
-          </button>
+          <div className="flex items-center gap-2">
+            {!loading && items.length > 0 && (
+              confirmEmpty ? (
+                <div className="flex items-center gap-2 text-xs">
+                  <button
+                    onClick={handleEsvaziar}
+                    disabled={emptying}
+                    className="text-red-400 hover:text-red-300 font-medium disabled:opacity-50"
+                  >
+                    {emptying ? 'Apagando...' : 'Confirmar'}
+                  </button>
+                  <span className="text-slate-600">|</span>
+                  <button
+                    onClick={() => setConfirmEmpty(false)}
+                    className="text-slate-500 hover:text-slate-300"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmEmpty(true)}
+                  className="text-xs text-slate-500 hover:text-red-400 active:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-red-400/10"
+                >
+                  Esvaziar
+                </button>
+              )
+            )}
+            <button
+              onClick={onClose}
+              className="text-slate-500 hover:text-slate-300 transition-colors p-1 rounded-lg hover:bg-white/5"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
         {/* Body */}

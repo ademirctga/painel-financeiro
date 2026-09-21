@@ -101,6 +101,15 @@ export interface LancamentoExcluido {
   deletedAt: string;
 }
 
+export async function esvaziarLixeira(): Promise<boolean> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('lancamentos')
+    .delete()
+    .not('deleted_at', 'is', null);
+  return !error;
+}
+
 export async function fetchLancamentosExcluidos(): Promise<LancamentoExcluido[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
