@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Repeat2, LogOut } from 'lucide-react';
+import { ChevronLeft, Repeat2, LogOut, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import {
   fetchDespesasRecentes,
@@ -37,9 +37,10 @@ export default function RecorrenciasPage() {
   const router = useRouter();
   const { session, loading: authLoading, signOut } = useAuth();
 
-  const [items, setItems]     = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving]   = useState<string | null>(null);
+  const [items, setItems]         = useState<Item[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [saving, setSaving]       = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !session) router.replace('/login');
@@ -129,6 +130,14 @@ export default function RecorrenciasPage() {
     }
 
     setSaving(null);
+  }
+
+  async function handleDelete(item: Item) {
+    if (item.recorrenciaId) {
+      await excluirRecorrencia(item.recorrenciaId);
+    }
+    setItems((prev) => prev.filter((x) => x.descricao !== item.descricao));
+    setConfirmDelete(null);
   }
 
   if (authLoading || !session) {
@@ -255,6 +264,35 @@ export default function RecorrenciasPage() {
                     >
                       {brl(item.valor)}
                     </span>
+
+                    {/* Delete */}
+                    {confirmDelete === item.descricao ? (
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(item)}
+                          className="text-xs text-red-400 hover:text-red-300 font-medium"
+                        >
+                          Remover
+                        </button>
+                        <span className="text-slate-600 text-xs">|</span>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDelete(null)}
+                          className="text-xs text-slate-500 hover:text-slate-300"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDelete(item.descricao)}
+                        className="flex-shrink-0 p-1.5 text-slate-700 hover:text-red-400 active:text-red-400 transition-colors rounded"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
                   </li>
                 );
               })}
