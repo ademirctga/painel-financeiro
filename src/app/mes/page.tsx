@@ -10,7 +10,7 @@ import {
   inserirLancamento, atualizarLancamento, marcarComoPago, desmarcarPago, excluirLancamento,
 } from '@/services/lancamentos.service';
 import { Lancamento, Categoria, FiltrosDashboard, Recorrencia } from '@/types/financeiro';
-import { fetchRecorrencias, inserirRecorrencia, excluirRecorrencia, gerarLancamentosParaMes } from '@/services/recorrencias.service';
+import { fetchRecorrencias, inserirRecorrencia, excluirRecorrencia, gerarLancamentosParaMes, limparDuplicatasRecorrencia } from '@/services/recorrencias.service';
 import { ChevronLeft, ChevronRight, Check, Plus, BarChart2, LogOut, Pencil, Trash2, RefreshCw } from 'lucide-react';
 
 function formatMoeda(n: number) {
@@ -160,6 +160,9 @@ export default function MesPage() {
     setConfirmDeleteId(null);
   }
 
+  // Tracks which months already had recurring generation attempted this mount
+  const generatedMonthsRef = useRef<Set<string>>(new Set());
+
   // Inline valor edit
   const [editValorId, setEditValorId]   = useState<string | null>(null);
   const [editValorRaw, setEditValorRaw] = useState('');
@@ -210,23 +213,36 @@ export default function MesPage() {
   useEffect(() => {
     if (!session) return;
     setLoading(true);
+    const mesKey = mes;
     const [y, m] = mes.split('-').map(Number);
-    gerarLancamentosParaMes(y, m).then(() => fetchLancamentos(filtrosParaMes(mes))).then((l) => {
-      const today = new Date().toISOString().slice(0, 10);
-      const toUpdate = l.filter(
-        (item) => item.tipo === 'despesa' && item.status === 'previsto' && item.dataCompetencia < today
-      );
-      if (toUpdate.length > 0) {
-        const updated = l.map((item) =>
-          toUpdate.find((u) => u.id === item.id) ? { ...item, status: 'atrasado' as const } : item
+
+    const doFetch = () => {
+      fetchLancamentos(filtrosParaMes(mesKey)).then((l) => {
+        const today = new Date().toISOString().slice(0, 10);
+        const toUpdate = l.filter(
+          (item) => item.tipo === 'despesa' && item.status === 'previsto' && item.dataCompetencia < today
         );
-        setLancamentos(updated);
-        toUpdate.forEach((item) => atualizarLancamento(item.id, { status: 'atrasado' }));
-      } else {
-        setLancamentos(l);
-      }
-      setLoading(false);
-    });
+        if (toUpdate.length > 0) {
+          const updated = l.map((item) =>
+            toUpdate.find((u) => u.id === item.id) ? { ...item, status: 'atrasado' as const } : item
+          );
+          setLancamentos(updated);
+          toUpdate.forEach((item) => atualizarLancamento(item.id, { status: 'atrasado' }));
+        } else {
+          setLancamentos(l);
+        }
+        setLoading(false);
+      });
+    };
+
+    if (generatedMonthsRef.current.has(mesKey)) {
+      doFetch();
+      return;
+    }
+    generatedMonthsRef.current.add(mesKey);
+    limparDuplicatasRecorrencia(y, m)
+      .then(() => gerarLancamentosParaMes(y, m))
+      .then(doFetch);
   }, [session, mes, refreshKey]);
 
   // ── derived ────────────────────────────────────────────────────────────────
